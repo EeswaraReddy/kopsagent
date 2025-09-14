@@ -1,0 +1,65 @@
+# -------------------------
+# Python
+# -------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env
+.env.*
+
+# -------------------------
+# IDE / Editor
+# -------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# -------------------------
+# OS Files
+# -------------------------
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# Logs
+# -------------------------
+*.log
+*.out
+*.err
+
+# -------------------------
+# Notebooks
+# -------------------------
+.ipynb_checkpoints
+
+# -------------------------
+# Helm / K8s
+# -------------------------
+*.tgz
+chart.lock
+values.override.yaml
+
+# -------------------------
+# Terraform
+# -------------------------
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# -------------------------
+# GitHub / CI
+# -------------------------
+# Don’t ignore workflows if you want to commit them
+*.pem
+*.crt
+*.key
+secrets.yaml

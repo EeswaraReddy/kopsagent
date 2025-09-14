@@ -1,0 +1,59 @@
+# Sample Helm Values for KnowledgeOps Agent
+
+# Global settings
+global:
+  image:
+    repository: your-docker-repo/knowledgeops-agent
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 80
+
+# Postgres settings
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 13
+  postgresqlUsername: user
+  postgresqlPassword: password
+  postgresqlDatabase: knowledgeops
+
+# Chroma settings
+chroma:
+  enabled: true
+  image:
+    repository: your-docker-repo/chroma
+    tag: latest
+  port: 8080
+
+# FastAPI settings
+fastapi:
+  enabled: true
+  image:
+    repository: your-docker-repo/knowledgeops-agent
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 80
+
+# Ingress settings
+ingress:
+  enabled: false
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - /
+
+# Resources
+resources: {}
+  
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

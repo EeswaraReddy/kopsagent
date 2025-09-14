@@ -1,0 +1,13 @@
+streamlit
+chromadb
+langchain-community
+fastembed
+pypdf
+html2text
+python-dotenv
+requests
+fastapi
+uvicorn
+PyGithub>=2.3.0
+
+
