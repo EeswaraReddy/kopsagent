@@ -4,6 +4,7 @@ import dotenv
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import Dict
 
 
 
@@ -19,8 +20,9 @@ for var in required_envs:
 from knowledgeops.connectors.confluence import ConfluenceIngestor
 from knowledgeops.storage.vector_store import VectorStore
 from knowledgeops.llm.groq_client import GroqLLM
-from knowledgeops.connectors.github import GitHubIngestor
+from knowledgeops.connectors.github_ingestor  import GitHubIngestor
 from knowledgeops.agents.helm_agent import HelmAgent
+#from github_client import GithubClient
 
 
 app = FastAPI(title="KnowledgeOps Agent")
@@ -73,7 +75,7 @@ class GitHubIngestRequest(BaseModel):
 @app.post("/v1/ingest/github")
 def ingest_github(req: GitHubIngestRequest):
     try:
-        from knowledgeops.connectors.github import GitHubIngestor
+        from knowledgeops.connectors.github_ingestor  import GitHubIngestor
         ingestor = GitHubIngestor()
         docs = ingestor.fetch_repo_files(
             repo=f"{req.owner}/{req.repo}",
@@ -84,22 +86,36 @@ def ingest_github(req: GitHubIngestRequest):
         return {"status": "success", "ingested_docs": len(docs)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-# -------------------------------
-# Request Models
-# -------------------------------
+    
 class AgentQueryRequest(BaseModel):
     query: str
     dry_run: bool = True
+    repo: str = os.getenv("DEFAULT_REPO", "your-org/your-repo")  # fallback
 
 # -------------------------------
 # Routes
 # -------------------------------
 @app.post("/v1/agent/query")
-def agent_query(req: AgentQueryRequest):
+def agent_query(req: AgentQueryRequest) -> Dict:
     try:
-        agent= HelmAgent()
+        agent = HelmAgent()
+
+        # Step 1: Plan
         plan = agent.plan_action(req.query)
-        result = agent.execute_plan(plan, dry_run=req.dry_run)
-        return result
+
+        # Step 2: Execute (dry-run by default)
+        result = agent.execute_plan(
+            query=req.query,
+            repo=req.repo,
+            dry_run=req.dry_run
+        )
+
+        return {
+            "plan": plan,
+            "helm_chart": result.get("helm_chart"),
+            "pr_url": result.get("pr_url"),
+            "dry_run": req.dry_run
+        }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
