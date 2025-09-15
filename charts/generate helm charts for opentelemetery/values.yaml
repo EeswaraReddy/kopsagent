@@ -1,0 +1,238 @@
+Here is the final Helm YAML for OpenTelemetry:
+
+**opentelemetry/values.yaml**
+```yml
+# Global settings
+global:
+  image:
+    repository: your-docker-repo/opentelemetry
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 80
+
+# Ingress settings
+ingress:
+  enabled: true
+  host: opentelemetry.local
+```
+
+**opentelemetry/requirements.yaml**
+```yml
+dependencies:
+  - name: opentelemetry-collector
+    version: ^0.15.0
+    repository: https://opentelemetry.github.io/charts
+```
+
+**opentelemetry/templates/deployment.yaml**
+```yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "opentelemetry.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "opentelemetry.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "opentelemetry.name" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
+        ports:
+        - containerPort: 55678
+        volumeMounts:
+        - name: opentelemetry-config
+          mountPath: /etc/opentelemetry/config
+        - name: opentelemetry-data
+          mountPath: /var/lib/opentelemetry
+      volumes:
+      - name: opentelemetry-config
+        configMap:
+          name: {{ include "opentelemetry.fullname" . }}
+      - name: opentelemetry-data
+        persistentVolumeClaim:
+          claimName: {{ include "opentelemetry.fullname" . }}
+```
+
+**opentelemetry/templates/service.yaml**
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "opentelemetry.fullname" . }}
+spec:
+  selector:
+    app: {{ include "opentelemetry.name" . }}
+  ports:
+  - name: http
+    port: 80
+    targetPort: 55678
+  type: {{ .Values.global.service.type }}
+```
+
+**opentelemetry/templates/configmap.yaml**
+```yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "opentelemetry.fullname" . }}
+data:
+  config.yaml: |
+    service:
+      http:
+        port: 55678
+```
+
+**opentelemetry/templates/ingress.yaml**
+```yml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "opentelemetry.fullname" . }}
+spec:
+  rules:
+  - host: {{ .Values.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "opentelemetry.fullname" . }}
+            port:
+              number: 80
+```
+
+**requirements.yaml**
+```yml
+dependencies:
+  - name: opentelemetry-collector
+    version: ^0.15.0
+    repository: https://opentelemetry.github.io/charts
+```
+
+**values.yaml**
+```yml
+# Global settings
+global:
+  image:
+    repository: your-docker-repo/opentelemetry
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 80
+
+# OpenTelemetry settings
+opentelemetry:
+  enabled: true
+  image:
+    repository: opentelemetry/opentelemetry-collector
+    tag: latest
+  config:
+    service:
+      http:
+        port: 55678
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+```
+
+**templates/deployment.yaml**
+```yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "opentelemetry.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "opentelemetry.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "opentelemetry.name" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
+        ports:
+        - containerPort: 55678
+        volumeMounts:
+        - name: opentelemetry-config
+          mountPath: /etc/opentelemetry/config
+        - name: opentelemetry-data
+          mountPath: /var/lib/opentelemetry
+      volumes:
+      - name: opentelemetry-config
+        configMap:
+          name: {{ include "opentelemetry.fullname" . }}
+      - name: opentelemetry-data
+        persistentVolumeClaim:
+          claimName: {{ include "opentelemetry.fullname" . }}
+```
+
+**templates/service.yaml**
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "opentelemetry.fullname" . }}
+spec:
+  selector:
+    app: {{ include "opentelemetry.name" . }}
+  ports:
+  - name: http
+    port: 80
+    targetPort: 55678
+  type: {{ .Values.global.service.type }}
+```
+
+**templates/configmap.yaml**
+```yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "opentelemetry.fullname" . }}
+data:
+  config.yaml: |
+    service:
+      http:
+        port: 55678
+```
+
+**templates/ingress.yaml**
+```yml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "opentelemetry.fullname" . }}
+spec:
+  rules:
+  - host: {{ .Values.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "opentelemetry.fullname" . }}
+            port:
+              number: 80
+```
+
+To install the chart, run the following command:
+```bash
+helm install opentelemetry
+```
+This will install the OpenTelemetry chart in your Kubernetes cluster.
