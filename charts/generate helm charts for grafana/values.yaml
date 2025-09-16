@@ -1,0 +1,116 @@
+**grafana/**
+```yaml
+Chart.yaml
+```
+
+**grafana/Chart.yaml**
+```yaml
+apiVersion: v2
+name: grafana
+description: A Helm chart for Grafana
+type: application
+version: 0.1.0
+appVersion: 8.5.2
+```
+
+**grafana/values.yaml**
+```yaml
+# Global settings
+global:
+  image:
+    repository: grafana/grafana
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 3000
+
+# Postgres settings
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 13
+  postgresqlUsername: user
+  postgresqlPassword: password
+  postgresqlDatabase: grafana
+
+# Grafana settings
+grafana:
+  enabled: true
+  image:
+    repository: grafana/grafana
+    tag: latest
+  port: 3000
+  adminPassword: "your-admin-password"
+```
+
+**grafana/templates/deployment.yaml**
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.global.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.global.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.global.name }}
+    spec:
+      containers:
+      - name: {{ .Values.global.name }}
+        image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
+        ports:
+        - containerPort: {{ .Values.global.service.port }}
+```
+
+**grafana/templates/service.yaml**
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.global.name }}
+spec:
+  selector:
+    app: {{ .Values.global.name }}
+  ports:
+  - name: http
+    port: {{ .Values.global.service.port }}
+    targetPort: {{ .Values.global.service.port }}
+  type: ClusterIP
+```
+
+**grafana/templates/ingress.yaml**
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.global.name }}
+spec:
+  rules:
+  - host: {{ .Values.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.global.name }}
+            port:
+              number: {{ .Values.global.service.port }}
+```
+
+**grafana/templates/configmap.yaml**
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.name }}
+data:
+  POSTGRES_USER: {{ .Values.postgres.postgresqlUsername }}
+  POSTGRES_PASSWORD: {{ .Values.postgres.postgresqlPassword }}
+  POSTGRES_DB: {{ .Values.postgres.postgresqlDatabase }}
+```
