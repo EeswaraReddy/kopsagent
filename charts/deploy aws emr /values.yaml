@@ -1,0 +1,189 @@
+Here is the final Helm YAML for deploying AWS EMR:
+
+**Chart.yaml**
+```yaml
+apiVersion: v2
+name: emr
+description: A Helm chart for AWS EMR
+type: application
+version: 1.0.0
+appVersion: 1.0.0
+```
+
+**values.yaml**
+```yaml
+# Values for the EMR chart
+
+# EMR settings
+emr:
+  enabled: true
+  image:
+    repository: amazon/aws-emr
+    tag: latest
+  instanceType: m5.xlarge
+  numInstances: 2
+  region: us-west-2
+  ebsVolumeSize: 30
+  ebsVolumeType: gp2
+  bootstrapActions:
+    - script: |
+        # Install Chroma
+        curl -s https://raw.githubusercontent.com/your-repo/chroma/master/chroma.sh | bash
+        # Install Postgres
+        curl -s https://raw.githubusercontent.com/your-repo/postgres/master/postgres.sh | bash
+  configurations:
+    - {
+        Classification: "hive-site",
+        Properties: {
+          "hive.metastore.uri": "thrift://your-metastore-host:9083"
+        }
+      }
+```
+
+**requirements.yaml**
+```yaml
+dependencies:
+  - name: emr
+    version: 1.0.0
+    repository: https://your-repo.com/charts
+```
+
+**templates/deployment.yaml**
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: emr
+  template:
+    metadata:
+      labels:
+        app: emr
+    spec:
+      containers:
+      - name: emr
+        image: {{ .Values.emr.image.repository }}:{{ .Values.emr.image.tag }}
+        command: ["emr"]
+        args: ["--region", "{{ .Values.emr.region }}", "--instance-type", "{{ .Values.emr.instanceType }}", "--num-instances", "{{ .Values.emr.numInstances }}"]
+        ports:
+        - containerPort: 8088
+        volumeMounts:
+        - name: emr-data
+          mountPath: /mnt/emr-data
+      volumes:
+      - name: emr-data
+        emptyDir: {}
+```
+
+**templates/service.yaml**
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: emr
+spec:
+  selector:
+    app: emr
+  ports:
+  - name: web
+    port: 8088
+    targetPort: 8088
+  type: LoadBalancer
+```
+
+**templates/serviceaccount.yaml**
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: emr
+```
+
+**templates/bootstrap.yaml**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: emr-bootstrap
+spec:
+  containers:
+  - name: emr-bootstrap
+    image: {{ .Values.emr.image.repository }}:{{ .Values.emr.image.tag }}
+    command: ["emr"]
+    args: ["--bootstrap", "--region", "{{ .Values.emr.region }}", "--instance-type", "{{ .Values.emr.instanceType }}", "--num-instances", "{{ .Values.emr.numInstances }}"]
+```
+
+**templates/emr.yaml**
+```yaml
+apiVersion: emr.aws.upstash.com/v1
+kind: EMR
+metadata:
+  name: emr
+spec:
+  instanceType: {{ .Values.emr.instanceType }}
+  numInstances: {{ .Values.emr.numInstances }}
+  region: {{ .Values.emr.region }}
+  ebsVolumeSize: {{ .Values.emr.ebsVolumeSize }}
+  ebsVolumeType: {{ .Values.emr.ebsVolumeType }}
+  bootstrapActions:
+    - script: |
+        # Install Chroma
+        curl -s https://raw.githubusercontent.com/your-repo/chroma/master/chroma.sh | bash
+        # Install Postgres
+        curl -s https://raw.githubusercontent.com/your-repo/postgres/master/postgres.sh | bash
+  configurations:
+    - {
+        Classification: "hive-site",
+        Properties: {
+          "hive.metastore.uri": "thrift://your-metastore-host:9083"
+        }
+      }
+```
+
+**templates/emr-service.yaml**
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: emr-service
+spec:
+  selector:
+    app: emr
+  ports:
+  - name: web
+    port: 8088
+    targetPort: 8088
+  type: LoadBalancer
+```
+
+**templates/emr-serviceaccount.yaml**
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: emr-serviceaccount
+```
+
+To deploy the chart, run the following command:
+```bash
+helm install emr
+```
+This will deploy the EMR cluster with the specified configuration.
+
+To verify the deployment, run the following command:
+```bash
+helm status emr
+```
+This will display the status of the EMR deployment.
+
+To access the EMR web interface, run the following command:
+```bash
+kubectl port-forward svc/emr 8088:8088 &
+```
+This will forward the EMR web interface to your local machine.
+
+To verify the EMR web interface, open a web browser and navigate to `http://localhost:8088`.
