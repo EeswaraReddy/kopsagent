@@ -7,7 +7,7 @@ class GroqLLM:
     Generic LLM client for DevOps tasks using a locally hosted LLM.
     """
 
-    def __init__(self, base_url="https://devllm.pantherslabs.com/v1/chat/completions", model="tinyllama"):
+    def __init__(self, base_url="https://devllm.xxxxxxx.com/v1/chat/completions", model="tinyllama"):
         self.base_url = base_url
         self.model = model
 
