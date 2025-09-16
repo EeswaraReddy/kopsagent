@@ -1,0 +1,106 @@
+Here's the final Terraform code for creating an S3 module:
+
+**modules/s3/main.tf**
+```hcl
+# Create an S3 bucket
+resource "aws_s3_bucket" "s3_bucket" {
+  bucket        = var.bucket_name
+  acl           = "private"
+  force_destroy = true
+
+  # Enable versioning for the S3 bucket
+  versioning {
+    enabled = true
+  }
+
+  # Enable server-side encryption by default
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+}
+
+# Create an S3 bucket policy
+resource "aws_s3_bucket_policy" "s3_bucket_policy" {
+  bucket = aws_s3_bucket.s3_bucket.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource = "${aws_s3_bucket.s3_bucket.arn}/*"
+      }
+    ]
+  })
+}
+
+# Create an S3 bucket logging configuration
+resource "aws_s3_bucket_logging" "s3_bucket_logging" {
+  bucket = aws_s3_bucket.s3_bucket.id
+
+  target_bucket = var.log_bucket_name
+  target_prefix = "s3-logs/"
+}
+```
+
+**modules/s3/variables.tf**
+```hcl
+variable "bucket_name" {
+  type        = string
+  description = "The name of the S3 bucket"
+}
+
+variable "log_bucket_name" {
+  type        = string
+  description = "The name of the S3 bucket for logging"
+}
+```
+
+**modules/s3/outputs.tf**
+```hcl
+output "s3_bucket_arn" {
+  value       = aws_s3_bucket.s3_bucket.arn
+  description = "The ARN of the S3 bucket"
+}
+
+output "s3_bucket_id" {
+  value       = aws_s3_bucket.s3_bucket.id
+  description = "The ID of the S3 bucket"
+}
+```
+
+**main.tf**
+```hcl
+module "s3" {
+  source = file("./modules/s3")
+
+  bucket_name = "my-s3-bucket"
+  log_bucket_name = "my-s3-log-bucket"
+}
+```
+
+**Note:** Make sure to replace the `bucket_name` and `log_bucket_name` variables with your actual S3 bucket names.
+
+**Step-by-Step Reasoning:**
+
+1. We created a new directory called `modules/s3` to hold the S3 module.
+2. We created a `main.tf` file in the `modules/s3` directory to define the S3 bucket, bucket policy, and bucket logging configuration.
+3. We created a `variables.tf` file in the `modules/s3` directory to define the input variables for the module.
+4. We created an `outputs.tf` file in the `modules/s3` directory to define the output values for the module.
+5. We added a `main.tf` file to the root directory of the Terraform configuration to use the S3 module.
+
+**Usage:**
+
+1. Create a new directory for your Terraform configuration.
+2. Create a new directory called `modules/s3` inside the Terraform configuration directory.
+3. Copy the above code into the `modules/s3` directory.
+4. Replace the `bucket_name` and `log_bucket_name` variables with your actual S3 bucket names.
+5. Run `terraform init` to initialize the Terraform configuration.
+6. Run `terraform apply` to create the S3 bucket and bucket policy.
