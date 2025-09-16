@@ -1,15 +1,21 @@
-# src/knowledgeops/llm/local_client.py
+# src/knowledgeops/llm/groq_client.py
+import os
 import requests
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
 class GroqLLM:
     """
-    Generic LLM client for DevOps tasks using a locally hosted LLM.
+    Generic LLM client for DevOps tasks.
+    Can handle Helm charts, Terraform, scripts, and other infra tasks.
     """
 
-    def __init__(self, base_url="https://devllm.pantherslabs.com/v1/chat/completions", model="tinyllama"):
-        self.base_url = base_url
+    def __init__(self, model="llama-3.1-8b-instant"):
+        if not GROQ_API_KEY:
+            raise ValueError("Missing GROQ_API_KEY in .env")
         self.model = model
+        self.base_url = "https://api.groq.com/openai/v1/chat/completions"
 
         # 🔹 Strict DevOps instructions baked into the system prompt
         self.devops_instructions = (
@@ -24,8 +30,13 @@ class GroqLLM:
 
     def query(self, question: str, context: str):
         """
-        Send a prompt + context to the local LLM and return the response.
+        Send a prompt + context to the Groq API and return the model's response.
         """
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
         payload = {
             "model": self.model,
             "messages": [
@@ -35,12 +46,9 @@ class GroqLLM:
             "temperature": 0.2,
         }
 
-        resp = requests.post(self.base_url, json=payload)
+        resp = requests.post(self.base_url, headers=headers, json=payload)
         if resp.status_code != 200:
-            raise Exception(f"Local LLM error: {resp.text}")
+            raise Exception(f"Groq API error: {resp.text}")
 
-        try:
-            content = resp.json()["choices"][0]["message"]["content"]
-            return content.strip() if content else ""
-        except Exception:
-            raise Exception(f"Unexpected response format: {resp.text}")
+        content = resp.json()["choices"][0]["message"]["content"]
+        return content.strip() if content else ""

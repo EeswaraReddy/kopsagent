@@ -1,0 +1,134 @@
+**opentelemetry-helm-chart.yaml**
+```yaml
+# Source: opentelemetry/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opentelemetry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opentelemetry
+  template:
+    metadata:
+      labels:
+        app: opentelemetry
+    spec:
+      containers:
+      - name: opentelemetry
+        image: otel/opentelemetry-collector:latest
+        ports:
+        - containerPort: 55678
+---
+# Source: opentelemetry/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: opentelemetry
+spec:
+  selector:
+    app: opentelemetry
+  ports:
+  - name: http
+    port: 55678
+    targetPort: 55678
+  type: ClusterIP
+---
+# Source: opentelemetry/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opentelemetry-config
+data:
+  config.yaml: |
+    receivers:
+    - protocol: http
+      host: 0.0.0.0
+      port: 55678
+    exporters:
+    - logging:
+        loglevel: debug
+    service:
+      pipelines:
+      - receivers:
+        - http
+        exporters:
+        - logging
+---
+# Source: opentelemetry/templates/values.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opentelemetry-values
+data:
+  config.yaml: |
+    global:
+      telemetry:
+        endpoint: http://opentelemetry:55678
+```
+
+**opentelemetry-helm-chart/values.yaml**
+```yaml
+# Default values for opentelemetry.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+global:
+  image:
+    repository: otel/opentelemetry-collector
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 55678
+
+# Postgres settings
+postgres:
+  enabled: false
+  image:
+    repository: postgres
+    tag: 13
+  postgresqlUsername: user
+  postgresqlPassword: password
+  postgresqlDatabase: dbname
+
+# Chroma settings
+chroma:
+  enabled: false
+  image:
+    repository: chromadb/chroma
+    tag: latest
+  port: 8080
+
+# FastAPI settings
+fastapi:
+  enabled: false
+  image:
+    repository: your-docker-repo/knowledgeops-agent
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 80
+
+# Ingress settings
+ingress:
+  enabled: false
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - /
+
+# Resources
+resources: {}
+  
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+```
